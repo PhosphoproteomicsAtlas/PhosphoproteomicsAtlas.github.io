@@ -1,0 +1,490 @@
+<html>
+
+<head>
+  <title>PHOSPHOPROTEOMICS ATLAS</title>
+  <link rel="stylesheet" href="mystyle_3.css">
+
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@0.7.7/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="./plugins/chartjs-plugin-error-bars/build/Plugin.Errorbars.js"></script>
+  <script src="./phospho/output/mydata_phos_ave.js"></script>
+  <script src="./phospho/output/mydata_phos_log2.js"></script>
+  <script src="https://drive.google.com/uc?export=download&id=1QeVcvQ3UnHzESm8Zh-icHwgmcTMFkZb_"></script>
+  <script src="./phospho/background/output/mydata_phos_background.js"></script>
+
+
+</head>
+
+<body>
+
+  <nav>
+    <div class="navbar">
+      <a href="index.html">Home</a>
+      <a sytle="text-align: right" href="https://www.biorxiv.org/content/10.64898/2025.12.05.692571v1">Article</a>
+      <a sytle="text-align: right" href="DOWNLOADS.html">Downloads</a>
+
+      <div class="dropdown">
+        <button class="dropbtn">Explore datasets</button>
+        <div class="dropdown-content">
+          <a href="PROTEIN_PHOSPHOSITE_LEVELS.html">PROTEIN AND PSITE LEVELS</a>
+          <a href="KINASES.html">KINASES</a>
+          <a href="PROTEIN_PHOSPHOSITE_SEQ.html">PROTEIN SEQ ANNOTATION</a>
+        </div>
+      </div>
+
+      <a style="text-align: right" href="contact.html">Contact</a>
+    </div>
+  </nav>
+
+  <div class="header">
+    PROTEIN AND PHOSPHOSITE LEVELS ACROSS CELL LINES
+  </div>
+
+  <div>
+    <div
+      style="padding-top:10px; padding-bottom:20px; background-image:url('background.png'); background-size:cover; height:200px; background-position:left bottom;">
+      <button class="btn" title="Enter a valid gene name...">i</button>
+      <div>
+        <input type="text" id="gene_name_prot" placeholder="--- Insert gene name ---"
+          style="font-size:25px; width:260px; height:40px;margin: 6px auto;display: block; border-radius: 4px">
+      </div>
+      <div>
+        <select class="select" id="cell_lines_list"
+          style="font-size:20px; width:200px; margin: 6px auto; display: block; border-radius: 10px">
+          <option value="" disabled selected>Select a cell line</option>
+        </select>
+      </div>
+      <div style="text-align:center; display: flex; flex-direction: column;">
+        <button class="selectbtn" id="tile">Plot annot. prot. seq.</button>
+      </div>
+      <div style="text-align:center;">
+        <button id="option1" class="square-btn" onclick="selectOption('option1')"></button>
+        <span style="font-size: 14px;">Intensity</span>
+        <button id="option2" class="square-btn selected" onclick="selectOption('option2')">X</button>
+        <span style="font-size: 14px;">log2 FC</span>
+      </div>
+
+      <div id="selected-container"></div>
+    </div>
+  </div>
+  <div id="protein"></div>
+  <div id="legend"></div>
+  <div id="legend2"></div>
+
+  </div>
+  <footer style="text-align:center">
+    <small>Madrid, 2026</small>
+  </footer>
+
+  <script>
+
+    /* ================= PHOSPHO-PROTEOME SEQUENCE ================= */
+    const select = document.getElementById("cell_lines_list");
+    const selectedContainer = document.getElementById("selected-container");
+
+    const predefinedOptions = [
+      "A172", "A549", "BT-474", "DLD-1", "HCM", "HaCaT", "HEK293T", "HeLa", "HepG2", "HFF-1",
+      "HT-29", "HUVEC", "iPSCs", "Jurkat", "MCF-10A", "MDA-MB-231", "MIA PaCa-2", "MIO-M1",
+      "ML-1", "MOLM-13", "MV-4-11", "NB1", "NT2", "OCI-M1", "OVCAR-3", "RD", "RPE", "SH-SY5Y",
+      "SU-DHL-4", "T24", "U-2 OS"
+    ];
+
+    const selectedValues = new Set();
+    const MAX_SELECTIONS = 3;
+
+    // populate dropdown
+    predefinedOptions.forEach(option => {
+      const opt = document.createElement("option");
+      opt.value = option;
+      opt.textContent = option;
+      select.appendChild(opt);
+    });
+
+    // handle selection
+    select.addEventListener("change", () => {
+      const value = select.value;
+      if (!value) return;
+
+      if (selectedValues.size >= MAX_SELECTIONS) {
+        alert("You can select up to 3 cell lines.");
+        select.value = "";
+        return;
+      }
+
+      if (selectedValues.has(value)) {
+        select.value = "";
+        return;
+      }
+
+      selectedValues.add(value);
+      addSelectedItem(value);
+      select.value = "";
+    });
+
+    const cellLinesForPlot = getSelectedCellLines();
+    console.log(cellLinesForPlot);
+
+    document.getElementById("tile").addEventListener("click", () => {
+      const geneInput = document.getElementById("gene_name_prot");
+
+      const selectedCLs = getSelectedCellLines();   // ARRAY (max 3)
+      const geneFilter = geneInput.value.trim().toUpperCase();
+
+
+      if (selectedCLs.length === 0) {
+        alert("Please select at least one cell line.");
+        return;
+      }
+
+      const plotData = tile_plot(selectedCLs, geneFilter);
+      renderProteinTiles(plotData, geneFilter);
+    });
+
+    // create chip
+    function addSelectedItem(value) {
+      const div = document.createElement("div");
+      div.className = "selected-item";
+      div.dataset.value = value;
+
+      div.innerHTML = `
+    <span>${value}</span>
+    <button aria-label="Remove">×</button>
+  `;
+
+      div.querySelector("button").addEventListener("click", () => {
+        selectedValues.delete(value);
+        div.remove();
+      });
+
+      selectedContainer.appendChild(div);
+    }
+    // use this before plotting
+    function getSelectedCellLines() {
+      return Array.from(selectedValues);
+    }
+    function tile_plot(selectedCLs, geneFilter) {
+      const result = {};
+      if (selectedOption === 'option1') {
+        mydata_phos_ave.datasets.forEach(d => {
+          if (geneFilter && d.genenames !== geneFilter) return;
+
+          const gene = d.genenames;
+
+          selectedCLs.forEach(cl => {
+            const value = d.data[cl];
+
+            if (value !== "" && value !== null && value !== undefined) {
+              if (!result[gene]) {
+                result[gene] = {
+                  sequence: d.seq,
+                  sites: []
+                };
+              }
+
+              result[gene].sites.push({
+                site: Number(d.site),
+                cellLine: cl,
+                value: Number(value),
+                loop_st: Number(d.loop_start),
+                loop_end: Number(d.loop_end)
+              });
+            }
+          });
+        });
+
+        return result;
+      } else {
+        console.log("plotting log2")
+        mydata_phos_log2.datasets.forEach(d => {
+          if (geneFilter && d.genenames !== geneFilter) return;
+
+          const gene = d.genenames;
+
+          selectedCLs.forEach(cl => {
+            const value = d.data[cl];
+
+            if (value !== "" && value !== null && value !== undefined) {
+              if (!result[gene]) {
+                result[gene] = {
+                  sequence: d.seq,
+                  sites: []
+                };
+              }
+
+              result[gene].sites.push({
+                site: Number(d.site),
+                cellLine: cl,
+                value: Number(value),
+                loop_st: Number(d.loop_start),
+                loop_end: Number(d.loop_end)
+              });
+            }
+          });
+        });
+        return result;
+        console.log(result)
+      }
+    }
+
+
+    let selectedOption = 'option2'; // first option selected by default
+
+    function selectOption(optionId) {
+      // Deselect both buttons
+      document.getElementById('option1').classList.remove('selected');
+      document.getElementById('option2').classList.remove('selected');
+
+      // Clear inner text
+      document.getElementById('option1').innerText = '';
+      document.getElementById('option2').innerText = '';
+
+      // Select the clicked button
+      document.getElementById(optionId).classList.add('selected');
+      document.getElementById(optionId).innerText = 'X';
+
+      selectedOption = optionId;
+      console.log("Selected:", selectedOption);
+    }
+
+
+
+    function renderProteinTiles(plotData, geneFilter, CHUNK_SIZE = 50) {
+      console.log(selectedOption);
+      console.log(plotData);
+      const container = document.getElementById("protein");
+      const legend = document.getElementById("legend");
+
+      container.innerHTML = "";
+
+      if (!plotData[geneFilter] || !plotData[geneFilter].sites) {
+        container.textContent = `No data for gene "${geneFilter}"`;
+        return;
+      }
+
+      const sequence = plotData[geneFilter].sequence;
+      const sites = plotData[geneFilter].sites;
+
+      if (sites.length === 0) {
+        container.textContent = `No phosphosites for gene "${geneFilter}"`;
+        return;
+      }
+
+      // Get all background entries for this gene
+      const bgEntries = mydata_phos_background.datasets.filter(
+        d => d.genenames === geneFilter
+      );
+
+      // Build fast lookup map: { position → backgroundValue }
+      const backgroundMap = {};
+      const loops = []
+      bgEntries.forEach(entry => {
+        const position = Number(entry.site); // site is string → convert to number
+        const bgValue = Number(entry.data?.Background || 0);
+        backgroundMap[position] = bgValue;
+        const start = Number(entry.loop_start);
+        const end = Number(entry.loop_end);
+
+        // only store valid loops once
+        if (!isNaN(start) && !isNaN(end)) {
+          loops.push({ loop_st: start, loop_end: end });
+        }
+      });
+
+      // 1Group sites by cell line
+      const sitesByCL = {};
+      sites.forEach(s => {
+        if (!sitesByCL[s.cellLine]) sitesByCL[s.cellLine] = [];
+        sitesByCL[s.cellLine].push(s);
+      });
+
+      function intensityToColor_2d(value) {
+        // Convert to number
+        value = Number(value);
+
+        // Special case → missing / zero values
+        if (value === 0 || isNaN(value)) return "#d3d3d3";
+        // Special case → missing value
+        if (value === 0) return "#d3d3d3";
+
+        // Only clamp real values
+        value = Math.max(0, Math.min(1, value));
+
+        const start = { r: 255, g: 193, b: 7 };
+        const end = { r: 92, g: 51, b: 23 };
+
+        const r = Math.round(start.r + (end.r - start.r) * value);
+        const g = Math.round(start.g + (end.g - start.g) * value);
+        const b = Math.round(start.b + (end.b - start.b) * value);
+
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+      function intensityToColor_3d(value) {
+
+        // Convert to number
+        value = Number(value);
+
+        // Special case → missing / zero values
+        if (value === 0 || isNaN(value)) return "#d3d3d3";
+
+        // Scale value from -4 → +4 to range -1 → +1
+        const MIN = -4;
+        const MAX = 4;
+
+        let scaled = (value - MIN) / (MAX - MIN) * 2 - 1; // maps -4→+4 to -1→+1
+        scaled = Math.max(-1, Math.min(1, scaled));       // clamp just in case
+
+        let r = 0, g = 0, b = 0;
+
+        if (scaled < 0) {
+          const t = scaled + 1;   // scaled 0→1
+          r = g = Math.round(255 * t);
+          b = 255;
+        } else {
+          const t = scaled;       // scaled 0→1
+          r = 255;
+          g = b = Math.round(255 * (1 - t));
+        }
+
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      function intensityToColor_1d(value) {
+        return Number(value) === 1
+          ? "rgb(102, 178, 255)"   // purple
+          : "rgb(255, 255, 255)"; // white
+      }
+
+      // 3️Loop over sequence blocks
+      for (let chunkStart = 0; chunkStart < sequence.length; chunkStart += CHUNK_SIZE) {
+        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, sequence.length);
+        const chunkSeq = sequence.slice(chunkStart, chunkEnd);
+
+        // ─────────────────────────────
+        //  SEQUENCE ROW (always on top)
+        // ─────────────────────────────
+        const seqRow = document.createElement("div");
+        seqRow.className = "protein-row";
+
+        const seqLabel = document.createElement("div");
+        seqLabel.className = "cellline-label";
+        seqLabel.textContent = "Background";
+        seqRow.appendChild(seqLabel);
+
+        const seqDiv = document.createElement("div");
+        seqDiv.className = "protein-seq";
+
+        chunkSeq.split("").forEach((aa, index) => {
+          const position = chunkStart + index + 1;
+
+          const tile = document.createElement("div");
+          tile.className = "tile sequence-tile";
+          tile.textContent = aa;
+          const bgValue = backgroundMap[position];
+          if (bgValue !== undefined) {
+            tile.style.backgroundColor = intensityToColor_1d(bgValue);
+          }
+          
+          if (bgValue === 1) {
+            const posLabel = document.createElement("span");
+            posLabel.textContent = position;
+            posLabel.className = "site-position";
+            tile.appendChild(posLabel);
+          }
+          const inLoop = loops.some(
+            l => position >= l.loop_st && position <= l.loop_end
+          );
+
+          if (inLoop & bgValue === undefined) {
+            tile.style.backgroundColor = "orange";
+          }
+
+          // optional: show position on hover
+          tile.title = position;
+
+          seqDiv.appendChild(tile);
+        });
+
+        seqRow.appendChild(seqDiv);
+        container.appendChild(seqRow);
+
+        // ─────────────────────────────
+        //  CELL LINE ROWS
+        // ─────────────────────────────
+        Object.entries(sitesByCL).forEach(([cellLine, clSites]) => {
+          const row = document.createElement("div");
+          row.className = "protein-row";
+
+          const label = document.createElement("div");
+          label.className = "cellline-label";
+          label.textContent = cellLine;
+          row.appendChild(label);
+
+          const seqDivCL = document.createElement("div");
+          seqDivCL.className = "protein-seq";
+
+          const maxValue = Math.max(...clSites.map(s => s.value));
+
+          chunkSeq.split("").forEach((aa, index) => {
+            const position = chunkStart + index + 1;
+            const tile = document.createElement("div");
+            tile.className = "tile";
+            tile.textContent = aa;
+
+            const siteData = clSites.find(s => s.site === position);
+
+            if (siteData) {
+              const intensity = siteData.value / maxValue;
+
+              if (selectedOption === 'option2') {
+                tile.style.backgroundColor = intensityToColor_3d(intensity);
+              } else {
+                tile.style.backgroundColor = intensityToColor_2d(intensity);
+              }
+
+              tile.style.position = "relative";
+            }
+            seqDivCL.appendChild(tile);
+          });
+
+          row.appendChild(seqDivCL);
+          container.appendChild(row);
+        });
+
+        // Spacer between blocks
+        const spacer = document.createElement("div");
+        spacer.style.height = "12px";
+        container.appendChild(spacer);
+      }
+
+      // 4️⃣ Legend
+      if (legend) {
+        legend.innerHTML = `
+      <div>
+        <div class="legend-bar"></div>
+        <div class="legend-labels">
+          <span>Low</span>
+          <span>High</span>
+        </div>
+      </div>
+    `;
+      }
+      if (legend2) {
+        legend2.innerHTML = `
+      <div>
+        <div class="legend2-bar"></div>
+        <div class="legend2-labels">
+          <span>DOWN</span>
+          <span>UP</span>
+        </div>
+      </div>
+    `;
+      }
+    }
+
+
+  </script>
+
+</body>
+
+</html>

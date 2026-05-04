@@ -1,0 +1,632 @@
+<html>
+
+<head>
+  <title>PHOSPHOPROTEOMICS ATLAS</title>
+  <link rel="stylesheet" href="mystyle_1.css">
+
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@0.7.7/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="./plugins/chartjs-plugin-error-bars/build/Plugin.Errorbars.js"></script>
+
+  <script src="./prot/output/mydata_Prot_ave_2.js"></script>
+  <script src="./prot/output/mydata_Prot_log2_2.js"></script>
+  <script src="./prot/sd/output/mydata_Prot_sd_2.js"></script>
+  <script src="./phospho/output/mydata_phos_ave.js"></script>
+  <script src="./phospho/output/mydata_phos_log2.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd.js"></script>
+
+</head>
+
+<body>
+
+  <nav>
+    <div class="navbar">
+      <a href="index.html">Home</a>
+      <a sytle="text-align: right" href="https://www.biorxiv.org/content/10.64898/2025.12.05.692571v1">Article</a>
+      <a sytle="text-align: right" href="DOWNLOADS.html">Downloads</a>
+
+      <div class="dropdown">
+        <button class="dropbtn">Explore datasets</button>
+        <div class="dropdown-content">
+          <a href="PROTEIN_PHOSPHOSITE_LEVELS.html">PROTEIN AND PSITE LEVELS</a>
+          <a href="KINASES.html">KINASES</a>
+          <a href="PROTEIN_PHOSPHOSITE_SEQ.html">PROTEIN SEQ ANNOTATION</a>
+        </div>
+      </div>
+
+      <a style="text-align: right" href="contact.html">Contact</a>
+    </div>
+  </nav>
+
+  <div class="header">
+    PROTEIN AND PHOSPHOSITE LEVELS ACROSS CELL LINES
+  </div>
+  <div style="display: flex; background-image:url('background.png'); background-size:cover; height:280px; background-position:left bottom">
+    <div class="column">
+      <button class="btn" title="Enter a valid gene name...">i</button>
+      <!-- Gene input -->
+      <div style="text-align:center">
+        <input type="text" id="gene_name_prot" placeholder="--- Insert gene name ---"
+          style="font-size:25px; width:260px; height:40px;margin: 6px auto;display: block; border-radius: 4px">
+      </div>
+
+      <!-- Main buttons + toggle buttons container -->
+      <div>
+        <!-- Plot/Search buttons -->
+        <div style="text-align: center;">
+          <button class="selectbtn" onclick="plot_prot()">Plot protein</button>
+          <button class="selectbtn" onclick="search_phos()">Search Phos-sites</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size:15px; width:200px; margin: auto; display: block; ">Select a phosphorylation site</span>
+          <select class="form-control" id="secondList" name="secondList"
+            style="font-size:20px; width:200px; margin: auto; display: block; border-radius: 10px"></select>
+          <button class="selectbtn" onclick="plot_phos()">Plot phospho-site</button>
+        </div>
+        <!-- Toggle buttons (white box) -->
+      </div>
+        <div style="text-align:center;">
+        <button id="option1" class="square-btn selected" onclick="selectOption('option1')">X</button>
+        <span style="font-size: 14px;">Intensity</span>
+        <button id="option2" class="square-btn" onclick="selectOption('option2')"></button>
+        <span style="font-size: 14px;">log2 FC</span>
+      </div>
+    </div>
+
+    </div>
+   
+
+    <div id="bar_chart_legend"></div>
+
+    <div class="header_2" id="title_prot"></div>
+    <h2 id="message_prot"></h2>
+    <div class="chart-container"><canvas id="bar_chart"></canvas></div>
+    <div class="header_2" id="title_phos"></div>
+    <h2 id="message_phos"></h2>
+    <div id="phos_charts"><canvas id="bar_chart_phos" class="chart-container"></canvas></div>
+
+  <footer style="text-align:center">
+    <small>Madrid, 2026</small>
+  </footer>
+
+  <script>
+    /* ================= PROTEOME ================= */
+    let selectedOption = 'option1'; // first option selected by default
+
+    function selectOption(optionId) {
+      // Deselect both buttons
+      document.getElementById('option1').classList.remove('selected');
+      document.getElementById('option2').classList.remove('selected');
+
+      // Clear inner text
+      document.getElementById('option1').innerText = '';
+      document.getElementById('option2').innerText = '';
+
+      // Select the clicked button
+      document.getElementById(optionId).classList.add('selected');
+      document.getElementById(optionId).innerText = 'X';
+
+      selectedOption = optionId;
+      console.log("Selected:", selectedOption);
+    }
+
+    var mydatasets_prot = [];
+    var message_prot = document.getElementById("message_prot");
+    var barChart = null;
+    function plot_prot() {
+      if (selectedOption === 'option1') {
+        mydatasets_prot = [];
+        var genename_prot = document.getElementById("gene_name_prot").value;
+        var max;
+        for (var k = 0; k < mydata_Prot_ave_2.datasets.length; k++) {
+          var gene_name_list_prot = mydata_Prot_ave_2.datasets[k].genenames;
+          var gene_name_toUniprot = mydata_Prot_ave_2.datasets[k].protnames;
+         if (genename_prot !== "" && (genename_prot.toLowerCase() === gene_name_list_prot.toLowerCase() || genename_prot.toLowerCase() === gene_name_toUniprot.toLowerCase())) {
+            console.log("match!")
+            title_prot.innerHTML = "PROTEOME";
+            message_prot.innerHTML = "PROTEOME PROFILE OF: " + gene_name_list_prot.toUpperCase();
+            const data = [{
+              label: "PROT",
+              dataset: mydata_Prot_ave_2.datasets[k].data,
+              sdValues: mydata_Prot_sd_2.datasets[k].sd,
+              plot: mydatasets_prot
+            }];
+            console.log(data)
+            for (const fraction of data) {
+              const errorBars = {};
+
+              for (const key of Object.keys(fraction.sdValues)) {
+                const value = fraction.sdValues[key];
+                errorBars[key] = { plus: value, minus: value };
+              }
+
+              fraction.plot.push({
+                label: fraction.label,
+                data: fraction.dataset,
+                spanGraphs: true,
+                borderWidth: 1,
+                borderColor: "black",
+                backgroundColor: lineageColorVector,
+                fill: false,
+                errorBars: errorBars
+              });
+
+              const valMax = Math.max(...fraction.dataset);
+              const devMax = Math.max(...Object.values(fraction.sdValues));
+              const fracMax = valMax + devMax;
+
+              if (!max || fracMax > max) max = fracMax;
+            }
+            break;
+          } else {
+            message_prot.innerHTML = genename_prot === ""
+              ? "Enter a valid gene name"
+              : "NO DATA FOR THIS PROTEIN: " + gene_name_list_prot.toUpperCase();
+          }
+        }
+        console.log(max)
+        var ctx = document.getElementById("bar_chart").getContext("2d");
+        if (barChart) {
+          barChart.destroy();
+        }
+
+        barChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: [
+        "T24", "U-2 OS", "BT-474", "MCF-10A", "MDA-MB-231", "DLD-1", "HT-29", "HFF-1",
+        "RD", "MIO-M1", "RPE", "HeLa", "NT2", "OVCAR-3", "HCM",
+        "Jurkat", "MOLM-13", "MV-4-11", "OCI-M1", "SU-DHL-4", "HEK293T", "HepG2",
+        "A549", "A172", "NB1", "SH-SY5Y", "MIA PaCa-2", "HaCaT",
+        "iPSCs", "ML-1", "HUVEC"
+          ],
+            datasets: mydatasets_prot
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            legend: { display: false },
+            tooltips: { enabled: false },
+
+            scales: {
+              yAxes: [{
+                scaleLabel: { display: true, labelString: 'Intensity (a.u.)'},
+                ticks: {
+                  suggestedMin: 0,
+                  suggestedMax: max
+                }
+              }]
+            },
+          }
+        });
+      } else {
+        console.log("plotting: log2")
+        mydatasets_prot = [];
+        var genename_prot = document.getElementById("gene_name_prot").value;
+        
+        var max;
+        for (var k = 0; k < mydata_Prot_ave_2.datasets.length; k++) {
+          var gene_name_list_prot = mydata_Prot_log2_2.datasets[k].genenames;
+          var gene_name_toUniprot = mydata_Prot_log2_2.datasets[k].protnames;
+          if (genename_prot !== "" && (genename_prot.toLowerCase() === gene_name_list_prot.toLowerCase() || genename_prot.toLowerCase() === gene_name_toUniprot.toLowerCase())) {
+
+            title_prot.innerHTML = "PROTEOME";
+            message_prot.innerHTML = "PROTEOME PROFILE OF: " + gene_name_list_prot.toUpperCase();
+            const data = [{
+              label: "PROT",
+              dataset: mydata_Prot_log2_2.datasets[k].data,
+              plot: mydatasets_prot
+            }];
+            console.log(data)
+            for (const fraction of data) {
+              fraction.plot.push({
+                label: fraction.label,
+                data: fraction.dataset,
+                spanGraphs: true,
+                borderWidth: 1,
+                borderColor: "black",
+                backgroundColor: lineageColorVector,
+                fill: false,
+              });
+              const valMax = Math.max(...fraction.dataset);
+              max = valMax;
+            }
+            break;
+          } else {
+            message_prot.innerHTML = genename_prot === ""
+              ? "Enter a valid gene name"
+              : "NO DATA FOR THIS PROTEIN: " + genename_prot.toUpperCase();
+          }
+        }
+
+        var ctx = document.getElementById("bar_chart").getContext("2d");
+        if (barChart) {
+          barChart.destroy();
+        }
+        barChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: [
+        "T24", "U-2 OS", "BT-474", "MCF-10A", "MDA-MB-231", "DLD-1", "HT-29", "HFF-1",
+        "RD", "MIO-M1", "RPE", "HeLa", "NT2", "OVCAR-3", "HCM",
+        "Jurkat", "MOLM-13", "MV-4-11", "OCI-M1", "SU-DHL-4", "HEK293T", "HepG2",
+        "A549", "A172", "NB1", "SH-SY5Y", "MIA PaCa-2", "HaCaT",
+        "iPSCs", "ML-1", "HUVEC"
+          ],
+            datasets: mydatasets_prot
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            legend: { display: false },
+            tooltips: { enabled: false },
+
+            scales: {
+              yAxes: [{
+                scaleLabel: { display: true, labelString: 'log2 Fold Change' },
+                ticks: {
+                  suggestedMin: 0,
+                  suggestedMax: max
+                }
+              }]
+            },
+          }
+        });
+      }
+    }
+    /* ================= PHOSPHO-PROTEOME ================= */
+    var mydatasets_phos = [];
+
+    var message_phos = document.getElementById("message_phos");
+    var sites_phos = document.getElementById("site");
+    var list1 = document.getElementById('secondList');
+    var phos_charts = document.getElementById('phos_charts');
+
+    list1.options[0] = new Option('--Select--', '');
+
+    function search_phos() {
+      phos_charts.style.visibility = 'hidden';
+      mydatasets_phos = [];
+
+      var genename_phos = document.getElementById("gene_name_prot").value;
+      console.log(genename_phos);
+      var color = 0.1;
+      var hit = 0;
+      document.getElementById('secondList').innerHTML = "";
+      //document.getElementById("gene_name_phos").value="";
+      var list_num = 0;
+      for (var k = 0; k < mydata_phos_ave.datasets.length; k++) {
+        var gene_name_list_phos = mydata_phos_ave.datasets[k].genenames;
+        var gene_name_list_phos_uniprot = mydata_phos_ave.datasets[k].protein;
+        if (genename_phos.toLowerCase() === gene_name_list_phos.toLowerCase() || genename_phos.toLowerCase() === gene_name_list_phos_uniprot.toLowerCase()) {
+          list1.options[list_num] = new Option(mydata_phos_ave.datasets[k].psite, mydata_phos_ave.datasets[k].psite);
+          list_num = list_num + 1;
+          hit = hit + 1;
+        }
+        else {
+          if (hit >= 1) { message_phos.innerHTML = "" }
+          else if (genename_phos == "") { message_phos.innerHTML = "Enter a valid gene name" }
+          else { message_phos.innerHTML = ["NO PHOSPHO DATA FOR THIS PROTEIN:" + genename_phos.toUpperCase()] }
+          //document.getElementById('secondList').innerHTML="";
+        }
+
+      }
+    }
+
+    function plot_phos() {
+    if (selectedOption === 'option1') {
+      mydatasets_phos = [];
+
+      const list1 = document.getElementById("secondList");
+      const SelectedSite = list1.options[list1.selectedIndex].value;
+      const genename_phos = document.getElementById("gene_name_prot").value;
+      phos_charts.style.visibility = 'visible';
+
+      let max = 0; // will store the Y-axis max
+
+      for (let k = 0; k < mydata_phos_ave.datasets.length; k++) {
+        const gene_name_list_phos = mydata_phos_ave.datasets[k].genenames;
+        const gene_name_list_phos_uniprot = mydata_phos_ave.datasets[k].protein;
+
+        if ((genename_phos.toLowerCase() === gene_name_list_phos.toLowerCase() || genename_phos.toLowerCase() === gene_name_list_phos_uniprot.toLowerCase()) &&
+          SelectedSite === mydata_phos_ave.datasets[k].psite) {
+
+          title_phos.innerHTML = "PHOSPHO-PROTEOME TIME COURSE";
+          message_phos.innerHTML = gene_name_list_phos.toUpperCase() + " " + SelectedSite;
+
+          // Convert data and sd values to numbers
+          const numericDataset = Object.values(mydata_phos_ave.datasets[k].data).map(Number);
+          const numericSd = Object.fromEntries(
+            Object.entries(mydata_phos_sd.datasets[k].sd).map(([key, value]) => [key, Number(value)])
+          );
+
+          // Build error bars
+          const errorBars = {};
+          for (const key of Object.keys(numericSd)) {
+            errorBars[key] = { plus: numericSd[key], minus: numericSd[key] };
+          }
+
+          // Add dataset to Chart.js format
+          mydatasets_phos.push({
+            label: "PHOS",
+            data: numericDataset,
+            spanGraphs: true,
+            borderWidth: 1,
+            borderColor: "black",
+            backgroundColor: lineageColorVector,
+            fill: false,
+            tableColor: 'rgba(241, 169, 160, 1)',
+            errorBars: errorBars
+          });
+
+          // Update max for Y-axis scaling
+          const valMax = Math.max(...numericDataset);
+          const devMax = Math.max(...Object.values(numericSd));
+          const fracMax = valMax + devMax;
+          if (fracMax > max) max = fracMax;
+
+          break; // found the correct site, no need to continue
+        }
+      }
+
+      // Labels for x-axis
+      const plot_labels = [
+        "T24", "U-2 OS", "BT-474", "MCF-10A", "MDA-MB-231", "DLD-1", "HT-29", "HFF-1",
+        "RD", "MIO-M1", "RPE", "HeLa", "NT2", "OVCAR-3", "HCM",
+        "Jurkat", "MOLM-13", "MV-4-11", "OCI-M1", "SU-DHL-4", "HEK293T", "HepG2",
+        "A549", "A172", "NB1", "SH-SY5Y", "MIA PaCa-2", "HaCaT",
+        "iPSCs", "ML-1", "HUVEC"
+      ];
+
+      const ctx = document.getElementById("bar_chart_phos").getContext('2d');
+
+      // Destroy previous chart if it exists
+      if (window.phosChart) window.phosChart.destroy();
+
+      window.phosChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: plot_labels,
+          datasets: mydatasets_phos
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          tooltips: { enabled: false },
+          scales: {
+            xAxes: [{
+              display: true,
+              scaleLabel: { display: true }
+            }],
+            yAxes: [{
+              display: true,
+              scaleLabel: { display: true, labelString: 'Intensity (a.u.)' },
+              ticks: {
+                beginAtZero: true,
+                suggestedMax: max
+              }
+            }]
+          },
+          plugins: {
+            chartJsPluginErrorBars: {
+              width: '60%'
+            }
+          }
+        }
+      });
+    }
+    else{
+      console.log("plotting: ratios")  
+      mydatasets_phos = [];
+      const list1 = document.getElementById("secondList");
+      const SelectedSite = list1.options[list1.selectedIndex].value;
+      const genename_phos = document.getElementById("gene_name_prot").value;
+      phos_charts.style.visibility = 'visible';
+
+      let max = 0; // will store the Y-axis max
+      console.log(SelectedSite)
+      console.log(genename_phos)
+      for (let k = 0; k < mydata_phos_log2.datasets.length; k++) {
+        const gene_name_list_phos = mydata_phos_log2.datasets[k].genenames;
+        const gene_name_list_phos_uniprot = mydata_phos_ave.datasets[k].protein;
+        if ((genename_phos.toLowerCase() === gene_name_list_phos.toLowerCase() || genename_phos.toLowerCase() === gene_name_list_phos_uniprot.toLowerCase()) &&
+          SelectedSite === mydata_phos_log2.datasets[k].psite) {
+           console.log("found!") 
+          title_phos.innerHTML = "PHOSPHO-PROTEOME TIME COURSE";
+          message_phos.innerHTML = gene_name_list_phos.toUpperCase() + " " + SelectedSite;
+
+          // Convert data and sd values to numbers
+          const numericDataset = Object.values(mydata_phos_log2.datasets[k].data).map(Number);
+          // Add dataset to Chart.js format
+          mydatasets_phos.push({
+            label: "PHOS",
+            data: numericDataset,
+            spanGraphs: true,
+            borderWidth: 1,
+            borderColor: "black",
+            backgroundColor: lineageColorVector,
+            fill: false,
+            tableColor: 'rgba(241, 169, 160, 1)',
+          });
+          // Update max for Y-axis scaling
+          const valMax = Math.max(...numericDataset);
+          max = valMax;
+          break; // found the correct site, no need to continue
+        }
+      }
+      console.log(mydatasets_phos);
+      // Labels for x-axis
+      const plot_labels = [
+        "T24", "U-2 OS", "BT-474", "MCF-10A", "MDA-MB-231", "DLD-1", "HT-29", "HFF-1",
+        "RD", "MIO-M1", "RPE", "HeLa", "NT2", "OVCAR-3", "HCM",
+        "Jurkat", "MOLM-13", "MV-4-11", "OCI-M1", "SU-DHL-4", "HEK293T", "HepG2",
+        "A549", "A172", "NB1", "SH-SY5Y", "MIA PaCa-2", "HaCaT",
+        "iPSCs", "ML-1", "HUVEC"
+      ];
+
+      const ctx = document.getElementById("bar_chart_phos").getContext('2d');
+
+      // Destroy previous chart if it exists
+      if (window.phosChart) window.phosChart.destroy();
+
+      window.phosChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: plot_labels,
+          datasets: mydatasets_phos
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          tooltips: { enabled: false },
+          scales: {
+            xAxes: [{
+              display: true,
+              scaleLabel: { display: true }
+            }],
+            yAxes: [{
+              display: true,
+              scaleLabel: { display: true, labelString: 'log2 Fold Change' },
+              ticks: {
+                beginAtZero: true,
+                suggestedMax: max
+              }
+            }]
+          },
+        }
+      });
+    }
+    }
+
+
+
+
+    /* ================= Legend ================= */
+   const lineageMap = {
+      "Bladder": [
+        "T24"
+      ],
+      "Bone": [
+        "U-2OS"
+      ],
+      "Breast": [
+        "BT474",
+        "MCF10A",
+        "MDA-MB-231"
+      ],
+      "Colon": [
+        "DLD1",
+        "HT29"
+      ],
+      "Connective tissue": [
+        "hff",
+        "RD"
+      ],
+      "Eye": [
+        "MioM1",
+        "RPE"
+      ],
+      "Gonads": [
+        "HeLa",
+        "NT2",
+        "OVCAR-3"
+      ],
+      "Heart": [
+        "HCM"
+      ],
+      "Hematological": [
+        "Jurkat",
+        "MOLM-13",
+        "MV-4-11",
+        "OCI-M1",
+        "SU-DHL-4"
+      ],
+      "Kidney": [
+        "HEK293T"
+      ],
+      "Liver": [
+        "HepG2"
+      ],
+      "Lung": [
+        "A549"
+      ],
+      "Nervous system": [
+        "A172",
+        "NB1",
+        "SH-SY5Y"
+      ],
+      "Pancreas": [
+        "MIA PaCa-2"
+      ],
+      "Skin": [
+        "HaCaT"
+      ],
+      "Stem cells": [
+        "iPSCs"
+      ],
+      "Thyroid": [
+        "ML-1"
+      ],
+      "Vascular": [
+        "HUVEC"
+      ]
+    };
+    const lineageColors = {
+      "Bladder": "#8dd3c7",
+      "Bone": "#bebada",
+      "Breast": "#1f77b4",
+      "Colon": "#ff7f0e",
+      "Connective tissue": "#8c564b",
+      "Eye": "#17becf",
+      "Gonads": "#e377c2",
+      "Heart": "#d62728",
+      "Hematological": "#b2182b",
+      "Kidney": "#2ca02c",
+      "Liver": "#bcbd22",
+      "Lung": "#7f7f7f",
+      "Nervous system": "#9467bd",
+      "Pancreas": "#ff9896",
+      "Skin": "#aec7e8",
+      "Stem cells": "#c5b0d5",
+      "Thyroid": "#f7b6d2",
+      "Vascular": "#8A2B19"
+    };
+
+    const lineageColorVector = Object.entries(lineageMap).flatMap(
+      ([lineage, cellLines]) =>
+        cellLines.map(() => lineageColors[lineage])
+    );
+    const legend = document.getElementById("bar_chart_legend");
+
+    Object.entries(lineageMap).forEach(([lineage, cells]) => {
+      const group = document.createElement("div");
+      group.className = "legend-group";
+
+      const title = document.createElement("div");
+      title.className = "legend-title";
+
+      const color = document.createElement("span");
+      color.className = "legend-color";
+      color.style.background = lineageColors[lineage];
+
+      title.appendChild(color);
+      title.appendChild(document.createTextNode(lineage));
+
+      const items = document.createElement("div");
+      items.className = "legend-items";
+      items.textContent = cells.join(", ");
+
+      group.appendChild(title);
+      group.appendChild(items);
+      legend.appendChild(group);
+    });
+  </script>
+
+</body>
+
+</html>

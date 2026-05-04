@@ -1,0 +1,718 @@
+<html>
+
+<head>
+  <title>PHOSPHOPROTEOMICS ATLAS</title>
+  <link rel="stylesheet" href="mystyle_2.css">
+
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@0.7.7/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <script src="./plugins/chartjs-plugin-error-bars/build/Plugin.Errorbars.js"></script>
+  <script src="./kinases/kinases.js"></script>
+
+
+
+</head>
+
+<body>
+
+  <nav>
+    <div class="navbar">
+      <a href="index.html">Home</a>
+      <a sytle="text-align: right" href="https://www.biorxiv.org/content/10.64898/2025.12.05.692571v1">Article</a>
+      <a sytle="text-align: right" href="DOWNLOADS.html">Downloads</a>
+
+      <div class="dropdown">
+        <button class="dropbtn">Explore datasets</button>
+        <div class="dropdown-content">
+          <a href="PROTEIN_PHOSPHOSITE_LEVELS.html">PROTEIN AND PSITE LEVELS</a>
+          <a href="KINASES.html">KINASES</a>
+          <a href="PROTEIN_PHOSPHOSITE_SEQ.html">PROTEIN SEQ ANNOTATION</a>
+        </div>
+      </div>
+
+      <a style="text-align: right" href="contact.html">Contact</a>
+    </div>
+  </nav>
+
+  <div class="header">
+    KINASE LEVELS AND ACTIVITY ACROSS CELL LINES
+  </div>
+
+  <!-- Gene input and cell line input -->
+  <div>
+    <div
+      style="padding-top:10px; padding-bottom:20px; background-image:url('background.png'); background-size:cover; height:200px; background-position:left bottom;">
+      <button class="btn" title="Enter a valid gene name...">i</button>
+      <div>
+        <input type="text" id="gene_name_prot" placeholder="--- Insert gene name ---"
+          style="font-size:25px; width:260px; height:40px;margin: 6px auto;display: block; border-radius: 4px">
+      </div>
+
+      <div style="text-align: center;">
+        <button class="selectbtn" onclick="plot_prot(); plotSingleKinaseScatter();">Plot Kinase Activity</button>
+      </div>
+
+      <div>
+        <select class="select" id="cell_lines_list" style="font-size:20px; width:200px; margin: 6px auto; display: block; border-radius: 10px">
+          <option value="" disabled selected>Select a cell line</option>
+        </select>
+      </div>
+      <div style="text-align:center; display: flex; flex-direction: column;">
+        <button class="selectbtn" id="tile" style="height:60px">Plot Cell-based Kinase Activity</button>
+      </div>
+  <!--      <div id="selected-container"></div> -->
+    </div>
+  </div>
+
+
+  </div>
+  </div>
+
+  <div id="bar_chart_legend"></div>
+
+<div class="dashboard">
+
+  <!-- LEFT TOP -->
+<div class="panel left-panel"> 
+  <h3 id="chart-title">CScore by Cell Line</h3>
+  <div class="chart-container">
+    <canvas id="bar_chart"></canvas>
+  </div>  
+</div>
+
+  <!-- RIGHT TOP -->
+  <div class="panel right-panel">
+    <h3>Single Kinase Scatter</h3>
+    <div id="scatterSingle"></div>
+  </div>
+
+  <!-- LEFT BOTTOM -->
+  <div class="panel left-panel">
+    <h3>Kinome Scatter (SKEW vs Cscore)</h3>
+    <div id="scatterKinome"></div>
+  </div>
+
+  <!-- RIGHT BOTTOM -->
+  <div class="panel right-panel">
+    <h3>Kinase Ranking</h3>
+    <div id="plotDiv"></div>
+  </div>
+
+</div>
+  <footer style="text-align:center">
+    <small>Madrid, 2026</small>
+  </footer>
+
+<script>
+
+
+const geneInput = document.getElementById("gene_name_prot");
+const select = document.getElementById("cell_lines_list");
+/*  const selectedContainer = document.getElementById("selected-container");
+    /* ================= Legend ================= */
+    const lineageMap = {
+      "Bladder": [
+        "T24"
+      ],
+      "Bone": [
+        "U-2OS"
+      ],
+      "Breast": [
+        "BT474",
+        "MCF10A",
+        "MDA-MB-231"
+      ],
+      "Colon": [
+        "DLD1",
+        "HT29"
+      ],
+      "Connective tissue": [
+        "hff",
+        "RD"
+      ],
+      "Eye": [
+        "MioM1",
+        "RPE"
+      ],
+      "Gonads": [
+        "HeLa",
+        "NT2",
+        "OVCAR-3"
+      ],
+      "Heart": [
+        "HCM"
+      ],
+      "Hematological": [
+        "Jurkat",
+        "MOLM-13",
+        "MV-4-11",
+        "OCI-M1",
+        "SU-DHL-4"
+      ],
+      "Kidney": [
+        "HEK293T"
+      ],
+      "Liver": [
+        "HepG2"
+      ],
+      "Lung": [
+        "A549"
+      ],
+      "Nervous system": [
+        "A172",
+        "NB1",
+        "SH-SY5Y"
+      ],
+      "Pancreas": [
+        "MIA PaCa-2"
+      ],
+      "Skin": [
+        "HaCat"
+      ],
+      "Stem cells": [
+        "iPSCs"
+      ],
+      "Thyroid": [
+        "ML-1"
+      ],
+      "Vascular": [
+        "HUVEC"
+      ]
+    };
+    const lineageColors = {
+      "Bladder": "#8dd3c7",
+      "Bone": "#bebada",
+      "Breast": "#1f77b4",
+      "Colon": "#ff7f0e",
+      "Connective tissue": "#8c564b",
+      "Eye": "#17becf",
+      "Gonads": "#e377c2",
+      "Heart": "#d62728",
+      "Hematological": "#b2182b",
+      "Kidney": "#2ca02c",
+      "Liver": "#bcbd22",
+      "Lung": "#7f7f7f",
+      "Nervous system": "#9467bd",
+      "Pancreas": "#ff9896",
+      "Skin": "#aec7e8",
+      "Stem cells": "#c5b0d5",
+      "Thyroid": "#f7b6d2",
+      "Vascular": "#8A2B19"
+    };
+
+    const lineageColorVector = Object.entries(lineageMap).flatMap(
+      ([lineage, cellLines]) =>
+        cellLines.map(() => lineageColors[lineage])
+    );
+    const legend = document.getElementById("bar_chart_legend");
+
+    Object.entries(lineageMap).forEach(([lineage, cells]) => {
+      const group = document.createElement("div");
+      group.className = "legend-group";
+
+      const title = document.createElement("div");
+      title.className = "legend-title";
+
+      const color = document.createElement("span");
+      color.className = "legend-color";
+      color.style.background = lineageColors[lineage];
+
+      title.appendChild(color);
+      title.appendChild(document.createTextNode(lineage));
+
+      const items = document.createElement("div");
+      items.className = "legend-items";
+      items.textContent = cells.join(", ");
+
+      group.appendChild(title);
+      group.appendChild(items);
+      legend.appendChild(group);
+    });
+
+    /* ================= barchart per kinase across cell lines ================= */
+
+var mydatasets_prot = [];
+var barChart = null;
+
+function plot_prot() {
+
+  mydatasets_prot = [];
+
+  const genename_prot = document.getElementById("gene_name_prot").value.trim();
+
+  let found = false;
+  let max = 0;
+
+  for (let k = 0; k < kinases.datasets.length; k++) {
+
+    const gene_name_list_prot = kinases.datasets[k].genenames;
+    const gene_name_toUniprot = kinases.datasets[k].protnames;
+
+    const match =
+      genename_prot !== "" &&
+      (
+        genename_prot.toLowerCase() === gene_name_list_prot.toLowerCase() ||
+        genename_prot.toLowerCase() === gene_name_toUniprot.toLowerCase()
+      );
+
+    if (match) {
+
+      found = true;
+
+
+      const dataArray = kinases.datasets[k].Cscore;
+
+      mydatasets_prot = [{
+        label: "PROT",
+        data: dataArray,
+        borderWidth: 1,
+        borderColor: "black",
+        backgroundColor: lineageColorVector
+      }];
+
+      max = Math.max(...dataArray);
+      break;
+    }
+  }
+
+  if (!found) {
+
+    return; // stop here so chart doesn't render garbage
+  }
+  document.getElementById("chart-title").textContent =
+    `CScore by Cell Line — ${genename_prot}`;
+  
+  const ctx = document.getElementById("bar_chart").getContext("2d");
+
+  if (barChart) {
+    barChart.destroy();
+  }
+  
+
+
+  barChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: [
+        "T24", "U-2 OS", "BT-474", "MCF-10A", "MDA-MB-231", "DLD-1", "HT-29", "HFF-1",
+        "RD", "MIO-M1", "RPE", "HeLa", "NT2", "OVCAR-3", "HCM",
+        "Jurkat", "MOLM-13", "MV-4-11", "OCI-M1", "SU-DHL-4", "HEK293T", "HepG2",
+        "A549", "A172", "NB1", "SH-SY5Y", "MIA PaCa-2", "HaCat",
+        "iPSCs", "ML-1", "HUVEC"
+      ],
+      datasets: mydatasets_prot
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      legend: { display: false },
+
+      tooltips: {
+        enabled: true,
+        callbacks: {
+          title: function(tooltipItems, data) {
+            const index = tooltipItems[0].index;
+            return data.labels[index]; // shows cell line name
+          },
+          label: function(tooltipItem, data) {
+            return "CScore: " + tooltipItem.yLabel;
+          }
+        }
+      },
+
+      scales: {
+        yAxes: [{
+          scaleLabel: {
+            display: true,
+            labelString: 'CScore'
+          },
+          ticks: {
+            suggestedMin: 0,
+            suggestedMax: max
+          }
+        }]
+      }
+    }
+  });
+
+}    
+
+/* ================= RANK PLOT ================= */
+
+    const predefinedOptions = [
+      "HEK293T", "HeLa", "Jurkat", "NT2", "OVCAR3", "SY5Y", "A172", "A549",
+      "HUVEC", "MCF10A", "MDAMB235", "PC3", "RPE", "U2OS", "hff", "iPSCs",
+      "HT29", "HaCat", "MiaPaca", "SCC25", "SUDHL4", "T24", "BT474",
+      "DLD1", "HCM", "HepG2", "ML1", "MV411", "MioM1", "Molm13",
+      "NB1", "OCIM1", "RD", "PV"
+    ];
+
+    const selectedValues = new Set();
+    const MAX_SELECTIONS = 1;
+
+    // populate dropdown
+    predefinedOptions.forEach(option => {
+      const opt = document.createElement("option");
+      opt.value = option;
+      opt.textContent = option;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener("change", () => {
+        const value = select.value;
+        if (!value) return;
+
+        // Clear previous selection
+        selectedValues.clear();
+
+        // Add the new one
+        selectedValues.add(value);
+
+        // Update UI (optional: clear previous tags/list)
+        clearSelectedItems();   // youll define this
+        addSelectedItem(value);
+
+        // Re-render chart with new cell line
+        updateChart(value);
+
+        // Reset dropdown
+        select.value = "";
+      });
+
+    const cellLinesForPlot = getSelectedCellLines();
+    console.log(cellLinesForPlot);
+
+document.getElementById("tile").addEventListener("click", () => {
+
+  const selectedCLs = getSelectedCellLines();
+  const geneFilter = document.getElementById("gene_name_prot").value.trim();
+
+  if (selectedCLs.length === 0) {
+    alert("Select at least one cell line");
+    return;
+  }
+
+  // existing
+  plotRank(selectedCLs, geneFilter);
+
+  // NEW scatter plots
+  plotKinomeScatter(selectedCLs[0], geneFilter);
+  // plotSingleKinaseScatter(geneFilter);
+});
+
+    // create chip
+    function addSelectedItem(value) {
+      const div = document.createElement("div");
+      div.className = "selected-item";
+      div.dataset.value = value;
+
+      div.innerHTML = `
+    <span>${value}</span>
+    <button aria-label="Remove">×</button>
+  `;
+
+      div.querySelector("button").addEventListener("click", () => {
+        selectedValues.delete(value);
+        div.remove();
+      });
+
+      selectedContainer.appendChild(div);
+    }
+    // use this before plotting
+    function getSelectedCellLines() {
+      return Array.from(selectedValues);
+    }
+
+
+function plotRank(selectedCLs, geneFilter) {
+
+    if (!selectedCLs || selectedCLs.length === 0) return;
+
+    const refCell = selectedCLs[0];
+    const refIndex = kinases.cellLines.indexOf(refCell);
+
+    if (refIndex === -1) {
+        console.error("Reference cell line not found:", refCell);
+        return;
+    }
+
+    const datasets = kinases.datasets;
+
+    // 1. build ranking (based on reference cell line)
+    let ranked = datasets.map(d => ({
+        name: d.genenames,
+        refScore: d.Cscore[refIndex]
+    }));
+
+    ranked = ranked.filter(p => p.refScore !== 0);
+    ranked.sort((a, b) => b.refScore - a.refScore);
+
+    const x = ranked.map(p => p.name);
+
+    // 2. find gene index for highlight
+    let highlightIndex = -1;
+
+    if (geneFilter && geneFilter.length > 0) {
+        const geneUpper = geneFilter.toUpperCase();
+
+        highlightIndex = ranked.findIndex(p =>
+            p.name.toUpperCase().includes(geneUpper)
+        );
+    }
+
+    // 3. build traces
+    const traces = [];
+
+    selectedCLs.forEach(cellLine => {
+        const idx = kinases.cellLines.indexOf(cellLine);
+        if (idx === -1) return;
+
+        const scoreMap = new Map(
+            datasets.map(d => [d.genenames, d.Cscore[idx]])
+        );
+
+        const y = ranked.map(p => scoreMap.get(p.name) ?? 0);
+
+        traces.push({
+            x,
+            y,
+            mode: "lines+markers",
+            type: "scatter",
+            name: cellLine,
+            hovertemplate: "%{x}<br>Cscore: %{y}<extra></extra>"
+        });
+    });
+
+    // 4. vertical highlight line
+    const shapes = [];
+
+    if (highlightIndex !== -1) {
+        shapes.push({
+            type: "line",
+            x0: ranked[highlightIndex].name,
+            x1: ranked[highlightIndex].name,
+            y0: 0,
+            y1: 1,
+            yref: "paper",
+            line: {
+                color: "red",
+                width: 2,
+                dash: "dash"
+            }
+        });
+    }
+const plotLayoutDefaults = {
+    autosize: true,
+    margin: { t: 40, l: 50, r: 20, b: 120 }
+};
+const layout = {
+    ...plotLayoutDefaults,
+    title: `Kinase Ranking (reference: ${refCell})`,
+    xaxis: { tickangle: -45 },
+    yaxis: { title: "Cscore" },
+    shapes: shapes,
+    legend: { orientation: "h" },
+    autosize: true,
+    height: undefined,
+};
+Plotly.newPlot("plotDiv", traces, layout).then(gd => {
+  gd.on('plotly_click', function(data) {
+    const kinase = data.points[0].x;
+    document.getElementById("gene_name_prot").value = kinase;
+    plot_prot(); // update bar chart
+  });
+});
+}
+
+/* ================= SCATTER PLOT ================= */
+
+function plotKinomeScatter(cellLine, geneFilter) {
+
+  const idx = kinases.cellLines.indexOf(cellLine);
+  if (idx === -1) return;
+
+  const geneUpper = geneFilter ? geneFilter.toUpperCase() : null;
+
+  const normal = [];
+  const highlight = [];
+
+  kinases.datasets.forEach(d => {
+    const point = {
+      name: d.genenames,
+      x: d.SKEW[idx],
+      y: d.Cscore[idx]
+    };
+
+    if (geneUpper && d.genenames.toUpperCase() === geneUpper) {
+      highlight.push(point);
+    } else {
+      normal.push(point);
+    }
+  });
+
+  const traceNormal = {
+    x: normal.map(p => p.x),
+    y: normal.map(p => p.y),
+    text: normal.map(p => p.name),
+    mode: "markers",
+    type: "scatter",
+    showlegend: false, 
+    marker: {
+      size: 6,
+      opacity: 0.5,
+      color: "gray"
+    },
+    hovertemplate:
+      "%{text}<br>SKEW: %{x}<br>Cscore: %{y}<extra></extra>"
+  };
+
+  const traceHighlight = {
+    x: highlight.map(p => p.x),
+    y: highlight.map(p => p.y),
+    text: highlight.map(p => p.name),
+    mode: "markers",
+    type: "scatter",
+    name: geneFilter || "Selected gene", 
+    marker: {
+      size: 10,
+      color: "red"
+    },
+    textposition: "top center",
+    hovertemplate:
+      "%{text}<br>SKEW: %{x}<br>Cscore: %{y}<extra></extra>"
+  };
+
+const layout = {
+  title: `Kinome Scatter (${cellLine})`,
+  xaxis: { 
+    title: "SKEW",
+    range: [0, 1]  },
+  yaxis: { 
+    title: "Cscore"
+  },
+  autosize: true,
+  shapes: [
+    {
+      type: "line",
+      yref: "paper",   // span entire width
+      y0: 0,
+      y1: 1,
+      xref: "y",
+      x0: 0.5,
+      x1: 0.5,
+      line: {
+        color: "black",
+        width: 2,
+        dash: "dash"
+      }
+    }
+  ]
+}
+
+  Plotly.newPlot("scatterKinome", [traceNormal, traceHighlight], layout);
+}
+
+function getCellLineColor(cellLine) {
+  for (const [lineage, cells] of Object.entries(lineageMap)) {
+    if (cells.includes(cellLine)) {
+      return lineageColors[lineage];
+    }
+  }
+  return "#999"; // fallback color
+}
+
+/* ================= SCATTER PLOT ALL CELL LINES ================= */
+
+
+function plotSingleKinaseScatter() {
+
+    const genename_prot = document.getElementById("gene_name_prot").value.trim();
+
+  if (!genename_prot) return;
+
+  const gene = genename_prot.toUpperCase();
+
+  const entry = kinases.datasets.find(d =>
+    d.genenames.toUpperCase() === gene ||
+    d.protnames.toUpperCase() === gene
+  );
+
+  if (!entry) {
+    console.warn("Gene not found:", gene);
+    return;
+  }
+
+  const x = entry.SKEW;
+  const y = entry.Cscore;
+  const labels = kinases.cellLines;
+
+  // assign color per cell line
+  const colors = labels.map(cl => getCellLineColor(cl));
+
+const traces = [];
+
+Object.entries(lineageMap).forEach(([lineage, cells]) => {
+
+  const indices = labels
+    .map((cl, i) => cells.includes(cl) ? i : -1)
+    .filter(i => i !== -1);
+
+  if (indices.length === 0) return;
+
+  traces.push({
+    x: indices.map(i => x[i]),
+    y: indices.map(i => y[i]),
+    text: indices.map(i => labels[i]),
+    mode: "markers",
+    type: "scatter",
+    name: lineage,  // this creates legend
+    marker: {
+      size: 10,
+      color: lineageColors[lineage]
+    },
+    hovertemplate:
+      "%{text}<br>SKEW: %{x}<br>Cscore: %{y}<extra></extra>"
+  });
+});
+const layout = {
+  title: `Single Kinase (${gene})`,
+    xaxis: { 
+    title: "SKEW",
+    range: [0, 1] 
+    },  // lock Y axis from 0 to 1
+  yaxis: { 
+    title: "Cscore"
+  },
+  autosize: true,
+  shapes: [
+    {
+      type: "line",
+      yref: "paper",   // span entire width
+      y0: 0,
+      y1: 1,
+      xref: "y",
+      x0: 0.5,
+      x1: 0.5,
+      line: {
+        color: "black",
+        width: 2,
+        dash: "dash"
+      }
+    }
+  ],
+  autosize: true   // 👈 important
+};
+
+Plotly.newPlot("scatterSingle", traces, layout);
+
+
+
+}
+  </script>
+
+
+</body>
+
+</html>
