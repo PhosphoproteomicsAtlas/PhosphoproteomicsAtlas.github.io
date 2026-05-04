@@ -1,0 +1,4 @@
+phospho/output/mydata_phos_ave.js filter=lfs diff=lfs merge=lfs -text
+phospho/output/mydata_phos_log2.js filter=lfs diff=lfs merge=lfs -text
+phospho/background/output/mydata_phos_background.js filter=lfs diff=lfs merge=lfs -text
+phospho/sd/output/mydata_phos_sd.js filter=lfs diff=lfs merge=lfs -text
