@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* ================= BASE ================= */
 body {
   font-family: 'Trebuchet MS';
@@ -315,7 +314,6 @@ body {
 canvas {
   width: 100% !important;
   height: 100% !important;
-=======
 /* ================= BASE ================= */
 body {
   font-family: 'Trebuchet MS';
@@ -632,5 +630,4 @@ body {
 canvas {
   width: 100% !important;
   height: 100% !important;
->>>>>>> 48422bc3f5be4b9baffcd9c370f4dccb9ab51cd7
 }
