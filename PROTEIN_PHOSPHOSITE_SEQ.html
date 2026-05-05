@@ -70,7 +70,12 @@
   <div>
     <div
       style="padding-top:10px; padding-bottom:20px; background-image:url('background.png'); background-size:cover; height:200px; background-position:left bottom;">
-      <button class="btn" title="Enter a valid gene name...">i</button>
+      <button class="btn" title="Enter a valid UniProt ID or gene name.
+Up to three cell lines can be selected simultaneously.
+Activation loops are highlighted in yellow in the background sequence (predicted using Phomics).
+Fold changes are calculated relative to the background composed of all cell lines.
+Phosphosites unique to a cell line are assigned a fold change of 1.5
+">i</button>
       <div>
         <input type="text" id="gene_name_prot" placeholder="--- Insert gene name ---"
           style="font-size:25px; width:260px; height:40px;margin: 6px auto;display: block; border-radius: 4px">
