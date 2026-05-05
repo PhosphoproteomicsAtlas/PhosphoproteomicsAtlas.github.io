@@ -44,7 +44,12 @@
   <div>
     <div
       style="padding-top:10px; padding-bottom:20px; background-image:url('background.png'); background-size:cover; height:200px; background-position:left bottom;">
-      <button class="btn" title="Enter a valid gene name...">i</button>
+      <button class="btn" title="Enter a valid UniProt ID or gene name.
+Cscore: Combined score reflecting kinase presence (proteome and phosphoproteome expression) and activity.
+Activity is inferred using ssGSEA based on in vitro kinase assays (PTM-SEA + iKiP-DB), motif analysis (Kinase Library), and phosphorylation of the activation loop.
+SKEW: Indicates the relative contribution of presence vs. activity to the Cscore.
+•	SKEW towards 0 → driven by presence 
+•	SKEW towards 1 → driven by activity ">i</button>
       <div>
         <input type="text" id="gene_name_prot" placeholder="--- Insert gene name ---"
           style="font-size:25px; width:260px; height:40px;margin: 6px auto;display: block; border-radius: 4px">
