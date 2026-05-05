@@ -12,9 +12,36 @@
   <script src="./prot/output/mydata_Prot_ave_2.js"></script>
   <script src="./prot/output/mydata_Prot_log2_2.js"></script>
   <script src="./prot/sd/output/mydata_Prot_sd_2.js"></script>
-  <script src="https://raw.githubusercontent.com/PhosphoproteomicsAtlas/PhosphoproteomicsAtlas.github.io/main/phospho/output/mydata_phos_ave.js"></script>
-  <script src="https://raw.githubusercontent.com/PhosphoproteomicsAtlas/PhosphoproteomicsAtlas.github.io/main/phospho/output/mydata_phos_log2.js"></script>
-  <script src="https://raw.githubusercontent.com/PhosphoproteomicsAtlas/PhosphoproteomicsAtlas.github.io/main/phospho/sd/output/mydata_phos_sd.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part1.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part2.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part3.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part4.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part5.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part6.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part7.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part8.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part9.js"></script>
+  <script src="./phospho/output/mydata_phos_ave_part10.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part1.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part2.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part3.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part4.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part5.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part6.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part7.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part8.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part9.js"></script>
+  <script src="./phospho/output/mydata_phos_log2_part10.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part1.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part2.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part3.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part4.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part5.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part6.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part7.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part8.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part9.js"></script>
+  <script src="./phospho/sd/output/mydata_phos_sd_part10.js"></script>
 </head>
 
 <body>
@@ -277,6 +304,24 @@
       }
     }
     /* ================= PHOSPHO-PROTEOME ================= */
+      function mergeDatasets(prefix, parts = 10) {
+        const merged = { datasets: [] };
+
+        for (let i = 1; i <= parts; i++) {
+          const partName = `${prefix}_part${i}`;
+          const part = window[partName];
+
+          if (part && part.datasets) {
+            merged.datasets = merged.datasets.concat(part.datasets);
+          }
+        }
+
+        return merged;
+    }
+    var mydata_phos_ave = mergeDatasets("mydata_phos_ave");
+    var mydata_phos_log2 = mergeDatasets("mydata_phos_log2");
+    var mydata_phos_sd = mergeDatasets("mydata_phos_sd");
+
     var mydatasets_phos = [];
 
     var message_phos = document.getElementById("message_phos");
