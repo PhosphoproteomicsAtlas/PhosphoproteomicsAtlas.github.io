@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <link rel="stylesheet" href="mystyle_1.css">
     <head>
@@ -23,11 +24,43 @@
         </div>
     </nav>
 
-    <h2 style="color: white ; background-color:#333; text-align: left ; font-size: 30px">About</h2>
-        <div style="background-color:rgb(255,255,255,0.7);background-image: url('human_summary.png'); background-size: contain; background-position:right bottom; background-repeat: no-repeat; height: 70vh">
-        <p style="width: 150vh; padding: 10px">Protein phosphorylation orchestrates cellular signaling and controls diverse biological processes, with its dysregulation driving diseases, notably cancer. Comprehensive, high-throughput phosphoproteomics remains limited by detection sensitivity, data completeness, and computational bottlenecks, especially in low-input settings. We present the deepest empirical human phosphoproteome resource to date, regrouping over 200,000 class I phosphosites across 33 diverse human cell lines, and demonstrate that this spectral library dramatically improves single-shot phosphoproteomics with 30-fold faster data processing compared to library-free approaches and enhanced confidence in phosphosite localization even from minimal sample input. Integrating proteome and phosphoproteome data, we developed a combined kinase activity score, revealing cell line- and cancer-specific signaling vulnerabilities, many correlating with drug sensitivity. This resource accelerates deep, reproducible phosphoproteomics, enabling systematic functional mapping of cellular signaling networks, and empowers precision oncology by highlighting actionable kinase targets in diverse cell states. </p>
-        <p style="width: 150vh; padding: 10px">Through this website, you can easily explore the human cell line phosphoproteome atlas data provided in Koenig et al publication. Click on "Explore datasets" to start your queries.</p>
-        <p style="width: 150vh; padding: 10px">Disclaimer: this resource is for research purpose only.</p>
-        </div>     
+
+<div class="about-container">
+
+    <div class="about-panel">
+
+        <div class="about-text">
+
+            <p>
+                Protein phosphorylation orchestrates cellular signaling and controls diverse biological processes,
+                with its dysregulation driving diseases, notably cancer. Comprehensive, high-throughput phosphoproteomics
+                remains limited by detection sensitivity, data completeness, and computational bottlenecks, especially in low-input settings.
+                We present the deepest <span class="highlight">empirical phosphoproteome resource</span> to date, regrouping over <span class="highlight">200,000 class I phosphosites</span>
+                across 33 diverse human cell lines, and demonstrate that this spectral library dramatically improves single-shot phosphoproteomics
+                with 30-fold faster data processing compared to library-free approaches and enhanced confidence in phosphosite localization
+                even from minimal sample input. Integrating proteome and phosphoproteome data, we developed a <span class="highlight">combined kinase activity score</span>,
+                revealing cell line- and cancer-specific signaling vulnerabilities, many correlating with drug sensitivity.
+                This resource accelerates deep, reproducible phosphoproteomics, enabling systematic functional mapping of cellular signaling networks,
+                and empowers precision oncology by highlighting actionable kinase targets in diverse cell states.
+            </p>
+
+            <p>
+                Through this website, you can easily explore the human cell line phosphoproteome atlas data provided in Koenig et al publication.
+                Click on <span class="highlight">Explore datasets</span> on the top menu to start your queries.
+            </p>
+
+            <p class="disclaimer">
+                Disclaimer: this resource is for research purpose only.
+            </p>
+
+        </div>
+
+        <div class="about-image">
+            <img src="human_summary.png" alt="Human phosphoproteome overview">
+        </div>
+
+    </div>
+
+</div>  
       </body>
 </html>
